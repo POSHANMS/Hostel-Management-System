@@ -84,4 +84,4 @@ Check **COMPLETE_GUIDE.md** for troubleshooting and detailed help.
 
 ---
 
-**Built with ❤️ for hostel management**
+**Built for hostel management**
