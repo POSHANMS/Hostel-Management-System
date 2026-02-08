@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payments - Hostel Management</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>🏠 Admin Panel</h2>
+      <p id="adminName">Administrator</p>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html">📊 Dashboard</a></li>
+      <li><a href="profile.html">👤 Profile</a></li>
+      <li><a href="add-student.html">➕ Add Student</a></li>
+      <li><a href="create-rooms.html">🏠 Create Rooms</a></li>
+      <li><a href="assign-room.html">🔗 Assign Room</a></li>
+      <li><a href="payments.html" class="active">💰 Payments</a></li>
+      <li><a href="complaints.html">📝 Complaints</a></li>
+    </ul>
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Payment Management</h1>
+      <p>Track and manage student payments</p>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <!-- Add Payment Section -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Create New Payment</h2>
+      </div>
+      <div class="card-body">
+        <form id="createPaymentForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="studentSelect">Select Student *</label>
+              <select id="studentSelect" required>
+                <option value="">Loading students...</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="amount">Amount (₹) *</label>
+              <input type="number" id="amount" required min="0" step="0.01" placeholder="5000">
+            </div>
+
+            <div class="form-group">
+              <label for="paymentMonth">Month *</label>
+              <select id="paymentMonth" required>
+                <option value="">Select Month</option>
+                <option value="January">January</option>
+                <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="paymentYear">Year *</label>
+              <input type="number" id="paymentYear" required min="2020" max="2030" value="2026">
+            </div>
+
+            <div class="form-group">
+              <label for="dueDate">Due Date *</label>
+              <input type="date" id="dueDate" required>
+            </div>
+
+            <div class="form-group">
+              <label for="paymentStatusCreate">Status *</label>
+              <select id="paymentStatusCreate">
+                <option value="Pending">Pending</option>
+                <option value="Paid">Paid</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              ➕ Create Payment
+            </button>
+            <button type="reset" class="btn btn-secondary">
+              🔄 Reset
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- All Payments Section -->
+    <div class="card">
+      <div class="card-header">
+        <h2>All Payments</h2>
+        <div class="filter-group">
+          <select id="statusFilter" onchange="filterPayments()">
+            <option value="">All Statuses</option>
+            <option value="Paid">Paid</option>
+            <option value="Pending">Pending</option>
+            <option value="Overdue">Overdue</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Payment ID</th>
+                <th>Student Name</th>
+                <th>Room No</th>
+                <th>Amount (₹)</th>
+                <th>Month/Year</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsTable">
+              <tr>
+                <td colspan="8" style="text-align: center;">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Update Modal -->
+  <div id="updateModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Update Payment</h2>
+        <span class="close" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <form id="updatePaymentForm">
+          <input type="hidden" id="paymentId">
+
+          <div class="form-group">
+            <label for="paymentStatus">Payment Status *</label>
+            <select id="paymentStatus" required>
+              <option value="Pending">Pending</option>
+              <option value="Paid">Paid</option>
+              <option value="Overdue">Overdue</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="paidDate">Paid Date</label>
+            <input type="date" id="paidDate">
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">💾 Update Payment</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+    const adminId = localStorage.getItem('adminId');
+    const token = localStorage.getItem('token');
+
+    if (!adminId || !token) {
+      window.location.href = '../login.html';
+    }
+
+    let allPayments = [];
+
+    // Load students for dropdown
+    async function loadStudents() {
+      try {
+        const response = await fetch(`${API_URL}/admin/students`);
+        const data = await response.json();
+
+        const select = document.getElementById('studentSelect');
+
+        if (data.success && data.data.length > 0) {
+          select.innerHTML = '<option value="">Select a student</option>' +
+            data.data.map(student =>
+              `<option value="${student.id}">${student.full_name} - ${student.email}</option>`
+            ).join('');
+        } else {
+          select.innerHTML = '<option value="">No students available</option>';
+        }
+      } catch (error) {
+        console.error('Error loading students:', error);
+      }
+    }
+
+    // Create new payment
+    document.getElementById('createPaymentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const paymentData = {
+        student_id: parseInt(document.getElementById('studentSelect').value),
+        amount: parseFloat(document.getElementById('amount').value),
+        month: document.getElementById('paymentMonth').value,
+        year: parseInt(document.getElementById('paymentYear').value),
+        due_date: document.getElementById('dueDate').value,
+        status: document.getElementById('paymentStatusCreate').value
+      };
+
+      try {
+        const response = await fetch(`${API_URL}/admin/payments/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(paymentData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert('Payment created successfully!', 'success');
+          document.getElementById('createPaymentForm').reset();
+          document.getElementById('paymentYear').value = '2026';
+          loadPayments();
+        } else {
+          showAlert(data.message || 'Failed to create payment', 'error');
+        }
+      } catch (error) {
+        showAlert('Error creating payment', 'error');
+        console.error('Error:', error);
+      }
+    });
+
+    async function loadPayments() {
+      try {
+        const response = await fetch(`${API_URL}/admin/payments`);
+        const data = await response.json();
+
+        if (data.success) {
+          allPayments = data.data;
+          displayPayments(allPayments);
+        }
+      } catch (error) {
+        console.error('Error loading payments:', error);
+      }
+    }
+
+    function displayPayments(payments) {
+      const tbody = document.getElementById('paymentsTable');
+
+      if (payments.length > 0) {
+        tbody.innerHTML = payments.map(payment => `
+          <tr>
+            <td>#${payment.id}</td>
+            <td>${payment.full_name || 'N/A'}</td>
+            <td>${payment.room_number || 'Unassigned'}</td>
+            <td>₹${payment.amount}</td>
+            <td>${payment.month || 'N/A'} ${payment.year || ''}</td>
+            <td>${formatDate(payment.due_date)}</td>
+            <td>
+              <span class="badge badge-${
+                payment.status === 'Paid' ? 'success' :
+                payment.status === 'Pending' ? 'warning' : 'danger'
+              }">${payment.status}</span>
+            </td>
+            <td>
+              <button class="btn btn-small btn-primary" onclick="openUpdateModal(${payment.id})">
+                Edit
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No payments found</td></tr>';
+      }
+    }
+
+    function filterPayments() {
+      const statusFilter = document.getElementById('statusFilter').value;
+
+      let filtered = allPayments;
+
+      if (statusFilter) {
+        filtered = filtered.filter(p => p.status === statusFilter);
+      }
+
+      displayPayments(filtered);
+    }
+
+    function openUpdateModal(paymentId) {
+      const payment = allPayments.find(p => p.id === paymentId);
+      if (!payment) return;
+
+      document.getElementById('paymentId').value = paymentId;
+      document.getElementById('paymentStatus').value = payment.status;
+
+      if (payment.paid_date) {
+        document.getElementById('paidDate').value = payment.paid_date.split('T')[0];
+      }
+
+      document.getElementById('updateModal').style.display = 'block';
+    }
+
+    function closeModal() {
+      document.getElementById('updateModal').style.display = 'none';
+      document.getElementById('updatePaymentForm').reset();
+    }
+
+    document.getElementById('updatePaymentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const paymentId = document.getElementById('paymentId').value;
+      const updateData = {
+        status: document.getElementById('paymentStatus').value,
+        paid_date: document.getElementById('paidDate').value || null
+      };
+
+      try {
+        const response = await fetch(`${API_URL}/admin/payments/${paymentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert('Payment updated successfully!', 'success');
+          closeModal();
+          loadPayments();
+        } else {
+          showAlert(data.message || 'Failed to update payment', 'error');
+        }
+      } catch (error) {
+        showAlert('Error updating payment', 'error');
+      }
+    });
+
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-IN');
+    }
+
+    function showAlert(message, type) {
+      const alert = document.getElementById('alert');
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      setTimeout(() => alert.classList.remove('show'), 3000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '../login.html';
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById('updateModal');
+      if (event.target == modal) {
+        closeModal();
+      }
+    }
+
+    loadPayments();
+    loadStudents();
+  </script>
+
+  <style>
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+      background-color: white;
+      margin: 5% auto;
+      padding: 0;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .close {
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .close:hover {
+      color: #333;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .filter-group select {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      font-size: 14px;
+    }
+  </style>
+</body>
+</html>

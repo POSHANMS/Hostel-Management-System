@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Rooms - Hostel Management</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>🏠 Admin Panel</h2>
+      <p id="adminName">Administrator</p>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html">📊 Dashboard</a></li>
+      <li><a href="profile.html">👤 Profile</a></li>
+      <li><a href="add-student.html">➕ Add Student</a></li>
+      <li><a href="create-rooms.html" class="active">🏠 Create Rooms</a></li>
+      <li><a href="assign-room.html">🔗 Assign Room</a></li>
+      <li><a href="payments.html">💰 Payments</a></li>
+      <li><a href="complaints.html">📝 Complaints</a></li>
+    </ul>
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Create Rooms</h1>
+      <p>Add new rooms to the hostel</p>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>New Room</h2>
+      </div>
+      <div class="card-body">
+        <form id="createRoomForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="roomNumber">Room Number *</label>
+              <input type="text" id="roomNumber" required placeholder="e.g., 101, A-201">
+            </div>
+
+            <div class="form-group">
+              <label for="floor">Floor *</label>
+              <select id="floor" required>
+                <option value="">Select Floor</option>
+                <option value="Ground">Ground Floor</option>
+                <option value="1">1st Floor</option>
+                <option value="2">2nd Floor</option>
+                <option value="3">3rd Floor</option>
+                <option value="4">4th Floor</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="type">Room Type *</label>
+              <select id="type" required>
+                <option value="">Select Type</option>
+                <option value="Single">Single</option>
+                <option value="Double">Double</option>
+                <option value="Triple">Triple</option>
+                <option value="Quad">Quad</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="capacity">Capacity *</label>
+              <input type="number" id="capacity" required min="1" max="4" placeholder="1-4">
+            </div>
+
+            <div class="form-group">
+              <label for="rent">Monthly Rent (₹) *</label>
+              <input type="number" id="rent" required min="0" placeholder="e.g., 5000">
+            </div>
+
+            <div class="form-group">
+              <label for="status">Status *</label>
+              <select id="status" required>
+                <option value="Available">Available</option>
+                <option value="Occupied">Occupied</option>
+                <option value="Maintenance">Under Maintenance</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="facilities">Facilities</label>
+              <textarea id="facilities" placeholder="AC, WiFi, Attached Bathroom, etc." rows="2"></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              🏠 Create Room
+            </button>
+            <button type="reset" class="btn btn-secondary">
+              🔄 Reset Form
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>All Rooms</h2>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Room No</th>
+                <th>Floor</th>
+                <th>Type</th>
+                <th>Capacity</th>
+                <th>Rent (₹)</th>
+                <th>Status</th>
+                <th>Facilities</th>
+              </tr>
+            </thead>
+            <tbody id="roomsTable">
+              <tr>
+                <td colspan="7" style="text-align: center;">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+    const adminId = localStorage.getItem('adminId');
+    const token = localStorage.getItem('token');
+
+    if (!adminId || !token) {
+      window.location.href = '../login.html';
+    }
+
+    document.getElementById('createRoomForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const roomData = {
+        room_number: document.getElementById('roomNumber').value,
+        floor: document.getElementById('floor').value,
+        type: document.getElementById('type').value,
+        capacity: parseInt(document.getElementById('capacity').value),
+        rent: parseFloat(document.getElementById('rent').value),
+        status: document.getElementById('status').value,
+        facilities: document.getElementById('facilities').value
+      };
+
+      try {
+        const response = await fetch(`${API_URL}/admin/rooms/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(roomData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert('Room created successfully!', 'success');
+          document.getElementById('createRoomForm').reset();
+          loadRooms();
+        } else {
+          showAlert(data.message || 'Failed to create room', 'error');
+        }
+      } catch (error) {
+        showAlert('Error creating room', 'error');
+      }
+    });
+
+    async function loadRooms() {
+      try {
+        const response = await fetch(`${API_URL}/admin/rooms`);
+        const data = await response.json();
+
+        const tbody = document.getElementById('roomsTable');
+
+        if (data.success && data.data.length > 0) {
+          tbody.innerHTML = data.data.map(room => `
+            <tr>
+              <td><strong>${room.room_number}</strong></td>
+              <td>${room.floor}</td>
+              <td>${room.room_type}</td>
+              <td>${room.capacity}</td>
+              <td>₹${room.rent}</td>
+              <td><span class="badge badge-${room.status === 'Active' ? 'success' : 'warning'}">${room.status}</span></td>
+              <td>${room.occupied}/${room.capacity}</td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No rooms found</td></tr>';
+        }
+      } catch (error) {
+        console.error('Error loading rooms:', error);
+      }
+    }
+
+    function showAlert(message, type) {
+      const alert = document.getElementById('alert');
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      setTimeout(() => alert.classList.remove('show'), 3000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '../login.html';
+    }
+
+    loadRooms();
+  </script>
+</body>
+</html>

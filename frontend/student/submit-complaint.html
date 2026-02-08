@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complaints - Student Portal</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>🎓 Student Portal</h2>
+      <p id="studentName">Student</p>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html">📊 Dashboard</a></li>
+      <li><a href="profile.html">👤 My Profile</a></li>
+      <li><a href="room-details.html">🏠 Room Details</a></li>
+      <li><a href="payment-details.html">💰 Payments</a></li>
+      <li><a href="submit-complaint.html" class="active">📝 Complaints</a></li>
+    </ul>
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Complaints</h1>
+      <p>Submit and track your complaints</p>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Submit New Complaint</h2>
+      </div>
+      <div class="card-body">
+        <form id="complaintForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="category">Category *</label>
+              <select id="category" required>
+                <option value="">Select Category</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Cleanliness">Cleanliness</option>
+                <option value="Food">Food</option>
+                <option value="Safety">Safety</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="subject">Subject *</label>
+              <input type="text" id="subject" required placeholder="Brief title of your complaint">
+            </div>
+
+            <div class="form-group full-width">
+              <label for="description">Description *</label>
+              <textarea id="description" required rows="4" placeholder="Describe your complaint in detail..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              📝 Submit Complaint
+            </button>
+            <button type="reset" class="btn btn-secondary">
+              🔄 Reset Form
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>My Complaints</h2>
+        <div class="filter-group">
+          <select id="statusFilter" onchange="filterComplaints()">
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Subject</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="complaintsTable">
+              <tr>
+                <td colspan="6" style="text-align: center;">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Complaint Details Modal -->
+  <div id="complaintModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Complaint Details</h2>
+        <span class="close" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Category</label>
+          <input type="text" id="viewCategory" readonly>
+        </div>
+
+        <div class="form-group">
+          <label>Subject</label>
+          <input type="text" id="viewSubject" readonly>
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="viewDescription" rows="4" readonly></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Submitted On</label>
+          <input type="text" id="viewDate" readonly>
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          <input type="text" id="viewStatus" readonly>
+        </div>
+
+        <div class="form-group">
+          <label>Admin Remarks</label>
+          <textarea id="viewRemarks" rows="3" readonly placeholder="No remarks yet"></textarea>
+        </div>
+
+        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+    const studentId = localStorage.getItem('studentId');
+    const token = localStorage.getItem('token');
+
+    if (!studentId || !token) {
+      window.location.href = '../login.html';
+    }
+
+    let allComplaints = [];
+
+    document.getElementById('complaintForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const complaintData = {
+        student_id: parseInt(studentId),
+        category: document.getElementById('category').value,
+        title: document.getElementById('subject').value,
+        description: document.getElementById('description').value
+      };
+
+      try {
+        const response = await fetch(`${API_URL}/student/complaints`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(complaintData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert('Complaint submitted successfully!', 'success');
+          document.getElementById('complaintForm').reset();
+          loadComplaints();
+        } else {
+          showAlert(data.message || 'Failed to submit complaint', 'error');
+        }
+      } catch (error) {
+        console.error('Submit error:', error);
+        showAlert('Error submitting complaint', 'error');
+      }
+    });
+
+    async function loadComplaints() {
+      try {
+        const response = await fetch(`${API_URL}/student/complaints/${studentId}`);
+        const data = await response.json();
+
+        if (data.success && data.complaints) {
+          allComplaints = data.complaints;
+          displayComplaints(allComplaints);
+        } else {
+          document.getElementById('complaintsTable').innerHTML = 
+            '<tr><td colspan="6" style="text-align: center;">No complaints found</td></tr>';
+        }
+
+        // Load student name
+        const profileResponse = await fetch(`${API_URL}/student/profile/${studentId}`);
+        const profileData = await profileResponse.json();
+        if (profileData.success && profileData.student) {
+          document.getElementById('studentName').textContent = profileData.student.full_name;
+        }
+
+      } catch (error) {
+        console.error('Error loading complaints:', error);
+      }
+    }
+
+    function displayComplaints(complaints) {
+      const tbody = document.getElementById('complaintsTable');
+
+      if (complaints.length > 0) {
+        tbody.innerHTML = complaints.map(complaint => `
+          <tr>
+            <td>#${complaint.id}</td>
+            <td>${formatDate(complaint.created_at)}</td>
+            <td>${complaint.category || 'General'}</td>
+            <td>${complaint.title}</td>
+            <td>
+              <span class="badge badge-${
+                complaint.status === 'Resolved' ? 'success' :
+                complaint.status === 'In Progress' ? 'warning' : 'danger'
+              }">${complaint.status}</span>
+            </td>
+            <td>
+              <button class="btn btn-small btn-primary" onclick="viewComplaint(${complaint.id})">
+                View
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No complaints found</td></tr>';
+      }
+    }
+
+    function filterComplaints() {
+      const statusFilter = document.getElementById('statusFilter').value;
+
+      let filtered = allComplaints;
+
+      if (statusFilter) {
+        filtered = filtered.filter(c => c.status === statusFilter);
+      }
+
+      displayComplaints(filtered);
+    }
+
+    function viewComplaint(complaintId) {
+      const complaint = allComplaints.find(c => c.id === complaintId);
+      if (!complaint) return;
+
+      document.getElementById('viewCategory').value = complaint.category || 'General';
+      document.getElementById('viewSubject').value = complaint.title;
+      document.getElementById('viewDescription').value = complaint.description;
+      document.getElementById('viewDate').value = formatDate(complaint.created_at);
+      document.getElementById('viewStatus').value = complaint.status;
+      document.getElementById('viewRemarks').value = complaint.admin_response || '';
+
+      document.getElementById('complaintModal').style.display = 'block';
+    }
+
+    function closeModal() {
+      document.getElementById('complaintModal').style.display = 'none';
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-IN');
+    }
+
+    function showAlert(message, type) {
+      const alert = document.getElementById('alert');
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      setTimeout(() => alert.classList.remove('show'), 3000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '../login.html';
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById('complaintModal');
+      if (event.target == modal) {
+        closeModal();
+      }
+    }
+
+    loadComplaints();
+  </script>
+
+  <style>
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+      background-color: white;
+      margin: 5% auto;
+      padding: 0;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 600px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .close {
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .close:hover {
+      color: #333;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .filter-group select {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      font-size: 14px;
+    }
+  </style>
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Room Details - Student Portal</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>🎓 Student Portal</h2>
+      <p id="studentName">Student</p>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html">📊 Dashboard</a></li>
+      <li><a href="profile.html">👤 My Profile</a></li>
+      <li><a href="room-details.html" class="active">🏠 Room Details</a></li>
+      <li><a href="payment-details.html">💰 Payments</a></li>
+      <li><a href="submit-complaint.html">📝 Complaints</a></li>
+    </ul>
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Room Details</h1>
+      <p>Your hostel room information</p>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <div id="roomContent">
+      <div class="card">
+        <div class="card-header">
+          <h2>Room Information</h2>
+        </div>
+        <div class="card-body">
+          <div class="info-grid">
+            <div class="info-item">
+              <strong>🚪 Room Number:</strong>
+              <span id="roomNumber">-</span>
+            </div>
+
+            <div class="info-item">
+              <strong>🏢 Floor:</strong>
+              <span id="floor">-</span>
+            </div>
+
+            <div class="info-item">
+              <strong>🛏️ Room Type:</strong>
+              <span id="roomType">-</span>
+            </div>
+
+            <div class="info-item">
+              <strong>👥 Capacity:</strong>
+              <span id="capacity">-</span>
+            </div>
+
+            <div class="info-item">
+              <strong>💰 Monthly Rent:</strong>
+              <span id="rent">-</span>
+            </div>
+
+            <div class="info-item">
+              <strong>📍 Current Occupancy:</strong>
+              <span id="occupancy">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Roommates Section -->
+      <div class="card">
+        <div class="card-header">
+          <h2>👥 My Roommates</h2>
+        </div>
+        <div class="card-body">
+          <div id="roommatesContainer">
+            <p style="text-align: center; color: #999;">Loading roommates...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Room Guidelines -->
+      <div class="card">
+        <div class="card-header">
+          <h2>📋 Room Guidelines</h2>
+        </div>
+        <div class="card-body">
+          <ul class="guidelines-list">
+            <li>🧹 Maintain cleanliness and hygiene in the room</li>
+            <li>🔇 Keep noise levels low during quiet hours (10 PM - 7 AM)</li>
+            <li>🚫 No smoking or alcohol consumption in the hostel premises</li>
+            <li>👥 Visitors are allowed only during designated hours (9 AM - 6 PM)</li>
+            <li>💡 Report any electrical or plumbing issues immediately</li>
+            <li>🔒 Keep your room locked when not present</li>
+            <li>♻️ Use dustbins and maintain a clean environment</li>
+            <li>📞 Contact hostel office for any emergencies</li>
+            <li>🤝 Respect your roommates' privacy and belongings</li>
+            <li>⏰ Follow hostel timings and rules strictly</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="noRoom" class="card" style="display: none;">
+      <div class="card-body" style="text-align: center; padding: 60px 20px;">
+        <h2 style="color: #999; margin-bottom: 15px;">🏠 No Room Assigned</h2>
+        <p style="color: #666;">You have not been assigned a room yet. Please contact the hostel administration.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+    const studentId = localStorage.getItem('studentId');
+    const token = localStorage.getItem('token');
+
+    if (!studentId || !token) {
+      window.location.href = '../login.html';
+    }
+
+    async function loadRoomDetails() {
+      try {
+        const response = await fetch(`${API_URL}/student/room-details/${studentId}`);
+        const data = await response.json();
+
+        if (data.success && data.room) {
+          // Display room information
+          document.getElementById('roomNumber').textContent = data.room.room_number;
+          document.getElementById('floor').textContent = data.room.floor || 'Ground';
+          document.getElementById('roomType').textContent = data.room.room_type;
+          document.getElementById('capacity').textContent = data.room.capacity + ' persons';
+          document.getElementById('rent').textContent = '₹' + data.room.rent || '₹5000';
+          document.getElementById('occupancy').textContent = (data.room.occupied || 0) + ' / ' + data.room.capacity;
+
+          // Display roommates
+          displayRoommates(data.roommates || []);
+
+          document.getElementById('roomContent').style.display = 'block';
+          document.getElementById('noRoom').style.display = 'none';
+        } else {
+          document.getElementById('roomContent').style.display = 'none';
+          document.getElementById('noRoom').style.display = 'block';
+        }
+
+        // Load student name
+        const profileResponse = await fetch(`${API_URL}/student/profile/${studentId}`);
+        const profileData = await profileResponse.json();
+        if (profileData.success) {
+          document.getElementById('studentName').textContent = profileData.student.full_name;
+        }
+
+      } catch (error) {
+        console.error('Error loading room details:', error);
+        showAlert('Error loading room details', 'error');
+      }
+    }
+
+    function displayRoommates(roommates) {
+      const container = document.getElementById('roommatesContainer');
+
+      if (roommates.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 30px; color: #999;">
+            <p>🏠 You don't have any roommates yet</p>
+            <p style="font-size: 14px; margin-top: 10px;">You are the only one in this room currently</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="roommates-grid">
+          ${roommates.map((roommate, index) => `
+            <div class="roommate-card">
+              <div class="roommate-avatar">
+                ${roommate.full_name.charAt(0).toUpperCase()}
+              </div>
+              <div class="roommate-info">
+                <h3>${roommate.full_name}</h3>
+                <p class="roommate-course">${roommate.course} - Year ${roommate.year}</p>
+                <div class="roommate-contact">
+                  <div class="contact-item">
+                    <span class="contact-icon">📧</span>
+                    <span class="contact-text">${roommate.email}</span>
+                  </div>
+                  <div class="contact-item">
+                    <span class="contact-icon">📞</span>
+                    <span class="contact-text">${roommate.phone}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function showAlert(message, type) {
+      const alert = document.getElementById('alert');
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      setTimeout(() => alert.classList.remove('show'), 3000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '../login.html';
+    }
+
+    loadRoomDetails();
+  </script>
+
+  <style>
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+
+    .info-item {
+      padding: 15px;
+      background: #f9fafb;
+      border-radius: 8px;
+      border-left: 3px solid var(--primary-color);
+    }
+
+    .info-item strong {
+      display: block;
+      margin-bottom: 5px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .info-item span {
+      display: block;
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .guidelines-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .guidelines-list li {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 15px;
+    }
+
+    .guidelines-list li:last-child {
+      border-bottom: none;
+    }
+
+    /* Roommates Styling */
+    .roommates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 10px;
+    }
+
+    .roommate-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 20px;
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .roommate-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .roommate-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      border: 3px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .roommate-info h3 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .roommate-course {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 15px;
+    }
+
+    .roommate-contact {
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+      padding-top: 15px;
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .contact-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .contact-icon {
+      margin-right: 10px;
+      font-size: 16px;
+    }
+
+    .contact-text {
+      opacity: 0.95;
+      word-break: break-word;
+    }
+  </style>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Hostel Management</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>🏠 Admin Panel</h2>
+      <p id="adminName">Administrator</p>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html" class="active">📊 Dashboard</a></li>
+      <li><a href="profile.html">👤 Profile</a></li>
+      <li><a href="add-student.html">➕ Add Student</a></li>
+      <li><a href="create-rooms.html">🏠 Create Rooms</a></li>
+      <li><a href="assign-room.html">🔗 Assign Room</a></li>
+      <li><a href="payments.html">💰 Payments</a></li>
+      <li><a href="complaints.html">📝 Complaints</a></li>
+    </ul>
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <p>Overview of hostel management system</p>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-details">
+          <h3 id="totalStudents">0</h3>
+          <p>Total Students</p>
+        </div>
+        <div class="stat-icon blue">👥</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-details">
+          <h3 id="totalRooms">0</h3>
+          <p>Total Rooms</p>
+        </div>
+        <div class="stat-icon green">🏠</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-details">
+          <h3 id="occupiedRooms">0</h3>
+          <p>Occupied Rooms</p>
+        </div>
+        <div class="stat-icon orange">🔑</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-details">
+          <h3 id="pendingComplaints">0</h3>
+          <p>Pending Complaints</p>
+        </div>
+        <div class="stat-icon red">📝</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Recent Activity</h2>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Activity</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="activityTable">
+              <tr>
+                <td colspan="3" style="text-align: center; padding: 40px;">
+                  <p style="color: #666; margin: 0;">No recent activities to display</p>
+                  <small style="color: #999;">Activity tracking coming soon</small>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+    const adminId = localStorage.getItem('adminId');
+    const token = localStorage.getItem('token');
+
+    if (!adminId || !token) {
+      window.location.href = '../login.html';
+    }
+
+    async function loadDashboard() {
+      try {
+        const response = await fetch(`${API_URL}/admin/dashboard/stats`);
+        const data = await response.json();
+
+        if (data.success) {
+          document.getElementById('totalStudents').textContent = data.data.totalStudents;
+          document.getElementById('totalRooms').textContent = data.data.totalRooms;
+          document.getElementById('occupiedRooms').textContent = data.data.occupiedRooms;
+          document.getElementById('pendingComplaints').textContent = data.data.pendingComplaints;
+
+          if (data.data.adminName) {
+            document.getElementById('adminName').textContent = data.data.adminName;
+          }
+        }
+      } catch (error) {
+        showAlert('Error loading dashboard', 'error');
+      }
+    }
+
+    function showAlert(message, type) {
+      const alert = document.getElementById('alert');
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      setTimeout(() => alert.classList.remove('show'), 3000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '../login.html';
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

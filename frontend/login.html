@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Hostel Management System</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .login-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      max-width: 900px;
+      width: 100%;
+      display: flex;
+    }
+
+    .login-left {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 60px 40px;
+      flex: 1;
+    }
+
+    .login-left h1 {
+      font-size: 32px;
+      margin-bottom: 20px;
+    }
+
+    .login-left p {
+      font-size: 16px;
+      line-height: 1.6;
+      opacity: 0.9;
+    }
+
+    .feature-list {
+      margin-top: 30px;
+      list-style: none;
+    }
+
+    .feature-list li {
+      margin: 15px 0;
+      padding-left: 30px;
+      position: relative;
+    }
+
+    .feature-list li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      font-weight: bold;
+      color: #4ade80;
+      font-size: 20px;
+    }
+
+    .login-right {
+      flex: 1;
+      padding: 60px 40px;
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .login-header h2 {
+      color: #333;
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .login-header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .tab-nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 15px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      color: #9ca3af;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .tab-btn.active {
+      color: #667eea;
+    }
+
+    .tab-btn.active:after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #667eea;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #374151;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .alert {
+      padding: 12px 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .login-container {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-left">
+      <h1>🏠 Hostel Management System</h1>
+      <p>Manage your hostel operations efficiently with our comprehensive management system.</p>
+      <ul class="feature-list">
+        <li>Student Management</li>
+        <li>Room Allocation</li>
+        <li>Fee Tracking</li>
+        <li>Complaint Management</li>
+        <li>Dashboard Analytics</li>
+      </ul>
+    </div>
+
+    <div class="login-right">
+      <div class="login-header">
+        <h2>Welcome Back</h2>
+        <p>Please login to continue</p>
+      </div>
+
+      <div class="tab-nav">
+        <button type="button" class="tab-btn active" onclick="switchTab('admin')">Admin Login</button>
+        <button type="button" class="tab-btn" onclick="switchTab('student')">Student Login</button>
+      </div>
+
+      <div id="alert" class="alert"></div>
+
+      <!-- Admin Login Form -->
+      <form id="adminLoginForm">
+        <div class="form-group">
+          <label for="adminEmail">Admin Email</label>
+          <input type="email" id="adminEmail" name="adminEmail" required placeholder="admin@hostel.com">
+        </div>
+        <div class="form-group">
+          <label for="adminPassword">Password</label>
+          <input type="password" id="adminPassword" name="adminPassword" required placeholder="Enter admin password">
+        </div>
+        <button type="submit" class="btn-primary" id="adminLoginBtn">Login as Admin</button>
+      </form>
+
+      <!-- Student Login Form -->
+      <form id="studentLoginForm" class="hidden">
+        <div class="form-group">
+          <label for="studentEmail">Email Address</label>
+          <input type="email" id="studentEmail" name="studentEmail" required placeholder="Enter your email">
+        </div>
+        <div class="form-group">
+          <label for="studentPassword">Password</label>
+          <input type="password" id="studentPassword" name="studentPassword" required placeholder="Enter your password">
+        </div>
+        <button type="submit" class="btn-primary" id="studentLoginBtn">Login as Student</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+
+    function switchTab(type) {
+      const tabs = document.querySelectorAll('.tab-btn');
+      const studentForm = document.getElementById('studentLoginForm');
+      const adminForm = document.getElementById('adminLoginForm');
+      
+      tabs.forEach(tab => tab.classList.remove('active'));
+      hideAlert();
+      
+      if (type === 'student') {
+        tabs[1].classList.add('active');
+        studentForm.classList.remove('hidden');
+        adminForm.classList.add('hidden');
+      } else {
+        tabs[0].classList.add('active');
+        adminForm.classList.remove('hidden');
+        studentForm.classList.add('hidden');
+      }
+    }
+
+    function showAlert(message, type) {
+      const alert = document.getElementById('alert');
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+    }
+
+    function hideAlert() {
+      const alert = document.getElementById('alert');
+      alert.className = 'alert';
+    }
+
+    // Admin Login Handler
+    document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
+      e.preventDefault(); // ✅ CRITICAL - Prevent page refresh
+      e.stopPropagation();
+      
+      const btn = document.getElementById('adminLoginBtn');
+      btn.disabled = true;
+      btn.textContent = 'Logging in...';
+      
+      const email = document.getElementById('adminEmail').value.trim();
+      const password = document.getElementById('adminPassword').value;
+      
+      console.log('Admin login attempt:', email);
+      
+      try {
+        const response = await fetch(`${API_URL}/auth/admin/login`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        console.log('Login response:', data);
+        
+        if (data.success && data.user) {
+          // ✅ Save data in the format expected by admin pages
+          localStorage.clear(); // Clear any old data
+          localStorage.setItem('adminId', data.user.id);
+          localStorage.setItem('token', 'logged_in'); // Simple token
+          localStorage.setItem('adminName', data.user.full_name);
+          localStorage.setItem('adminEmail', data.user.email);
+          
+          console.log('Admin logged in:', data.user.full_name);
+          
+          showAlert('Login successful! Redirecting...', 'success');
+          
+          setTimeout(() => {
+            window.location.href = 'admin/dashboard.html';
+          }, 500);
+          
+        } else {
+          throw new Error(data.message || 'Invalid credentials');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        showAlert(error.message || 'Login failed. Check server connection.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Login as Admin';
+      }
+      
+      return false; // ✅ Extra safety - prevent form submission
+    });
+
+    // Student Login Handler
+    document.getElementById('studentLoginForm').addEventListener('submit', async function(e) {
+      e.preventDefault(); // ✅ CRITICAL - Prevent page refresh
+      e.stopPropagation();
+      
+      const btn = document.getElementById('studentLoginBtn');
+      btn.disabled = true;
+      btn.textContent = 'Logging in...';
+      
+      const email = document.getElementById('studentEmail').value.trim();
+      const password = document.getElementById('studentPassword').value;
+      
+      console.log('Student login attempt:', email);
+      
+      try {
+        const response = await fetch(`${API_URL}/auth/student/login`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        console.log('Login response:', data);
+        
+        if (data.success && data.user) {
+          // ✅ Save data in the format expected by student pages
+          localStorage.clear(); // Clear any old data
+          localStorage.setItem('studentId', data.user.id);
+          localStorage.setItem('token', 'logged_in'); // Simple token
+          localStorage.setItem('studentName', data.user.full_name);
+          localStorage.setItem('studentEmail', data.user.email);
+          
+          console.log('Student logged in:', data.user.full_name);
+          
+          showAlert('Login successful! Redirecting...', 'success');
+          
+          setTimeout(() => {
+            window.location.href = 'student/dashboard.html';
+          }, 500);
+        } else {
+          throw new Error(data.message || 'Invalid credentials');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        showAlert(error.message || 'Login failed. Check server connection.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Login as Student';
+      }
+      
+      return false; // ✅ Extra safety - prevent form submission
+    });
+
+    // Debug on page load
+    console.log('Login page loaded');
+    console.log('API URL:', API_URL);
+  </script>
+</body>
+</html>

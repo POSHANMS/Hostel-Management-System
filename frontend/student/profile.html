@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - Student Portal</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>🎓 Student Portal</h2>
+      <p id="studentName">Student</p>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html">📊 Dashboard</a></li>
+      <li><a href="profile.html" class="active">👤 My Profile</a></li>
+      <li><a href="room-details.html">🏠 Room Details</a></li>
+      <li><a href="payment-details.html">💰 Payments</a></li>
+      <li><a href="submit-complaint.html">📝 Complaints</a></li>
+    </ul>
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>My Profile</h1>
+      <p>View and update your information</p>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Personal Information</h2>
+      </div>
+      <div class="card-body">
+        <form id="profileForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="name">Full Name *</label>
+              <input type="text" id="name" required>
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <input type="email" id="email" readonly>
+            </div>
+
+            <div class="form-group">
+              <label for="phone">Phone Number *</label>
+              <input type="tel" id="phone" required>
+            </div>
+
+            <div class="form-group">
+              <label for="course">Course</label>
+              <input type="text" id="course" readonly>
+            </div>
+
+            <div class="form-group">
+              <label for="year">Year</label>
+              <input type="text" id="year" readonly>
+            </div>
+
+            <div class="form-group">
+              <label for="guardianName">Guardian Name *</label>
+              <input type="text" id="guardianName" required>
+            </div>
+
+            <div class="form-group">
+              <label for="guardianPhone">Guardian Phone *</label>
+              <input type="tel" id="guardianPhone" required>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="address">Address *</label>
+              <textarea id="address" required rows="3"></textarea>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            💾 Update Profile
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Change Password</h2>
+      </div>
+      <div class="card-body">
+        <form id="passwordForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="currentPassword">Current Password *</label>
+              <input type="password" id="currentPassword" required>
+            </div>
+
+            <div class="form-group">
+              <label for="newPassword">New Password *</label>
+              <input type="password" id="newPassword" required>
+            </div>
+
+            <div class="form-group">
+              <label for="confirmPassword">Confirm New Password *</label>
+              <input type="password" id="confirmPassword" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-warning">
+            🔒 Change Password
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+    const studentId = localStorage.getItem('studentId');
+    const token = localStorage.getItem('token');
+
+    if (!studentId || !token) {
+      window.location.href = '../login.html';
+    }
+
+    async function loadProfile() {
+      try {
+        const response = await fetch(`${API_URL}/student/profile/${studentId}`);
+        const data = await response.json();
+
+        if (data.success && data.student) {
+          document.getElementById('name').value = data.student.full_name;
+          document.getElementById('email').value = data.student.email;
+          document.getElementById('phone').value = data.student.phone || '';
+          document.getElementById('course').value = data.student.course || '';
+          document.getElementById('year').value = data.student.year ? data.student.year + ' Year' : '';
+          document.getElementById('guardianName').value = data.student.guardian_name || '';
+          document.getElementById('guardianPhone').value = data.student.guardian_phone || '';
+          document.getElementById('address').value = data.student.address || '';
+          document.getElementById('studentName').textContent = data.student.full_name;
+        }
+      } catch (error) {
+        console.error('Profile load error:', error);
+        showAlert('Error loading profile', 'error');
+      }
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const profileData = {
+        full_name: document.getElementById('name').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('email').value
+      };
+
+      try {
+        const response = await fetch(`${API_URL}/student/profile/${studentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert('Profile updated successfully!', 'success');
+          loadProfile();
+        } else {
+          showAlert(data.message || 'Failed to update profile', 'error');
+        }
+      } catch (error) {
+        showAlert('Error updating profile', 'error');
+      }
+    });
+
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (newPassword !== confirmPassword) {
+        showAlert('Passwords do not match', 'error');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        showAlert('Password must be at least 6 characters', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/student/reset-password/${studentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            old_password: currentPassword,
+            new_password: newPassword 
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert('Password changed successfully!', 'success');
+          document.getElementById('passwordForm').reset();
+        } else {
+          showAlert(data.message || 'Failed to change password', 'error');
+        }
+      } catch (error) {
+        showAlert('Error changing password', 'error');
+      }
+    });
+
+    function showAlert(message, type) {
+      const alert = document.getElementById('alert');
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      setTimeout(() => alert.classList.remove('show'), 3000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '../login.html';
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>

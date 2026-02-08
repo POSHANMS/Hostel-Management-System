@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assign Room - Hostel Management</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>🏠 Admin Panel</h2>
+      <p id="adminName">Administrator</p>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html">📊 Dashboard</a></li>
+      <li><a href="profile.html">👤 Profile</a></li>
+      <li><a href="add-student.html">➕ Add Student</a></li>
+      <li><a href="create-rooms.html">🏠 Create Rooms</a></li>
+      <li><a href="assign-room.html" class="active">🔗 Assign Room</a></li>
+      <li><a href="payments.html">💰 Payments</a></li>
+      <li><a href="complaints.html">📝 Complaints</a></li>
+    </ul>
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Assign Room</h1>
+      <p>Assign rooms to students</p>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>New Assignment</h2>
+      </div>
+      <div class="card-body">
+        <form id="assignRoomForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="student">Select Student *</label>
+              <select id="student" required>
+                <option value="">Loading students...</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="room">Select Room *</label>
+              <select id="room" required>
+                <option value="">Loading rooms...</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="allotmentDate">Allotment Date *</label>
+              <input type="date" id="allotmentDate" required>
+            </div>
+
+            <div class="form-group">
+              <label for="deposit">Security Deposit (₹) *</label>
+              <input type="number" id="deposit" required min="0" placeholder="e.g., 10000">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              🔗 Assign Room
+            </button>
+            <button type="reset" class="btn btn-secondary">
+              🔄 Reset Form
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Available Rooms Summary</h2>
+      </div>
+      <div class="card-body">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-details">
+              <h3 id="availableRooms">0</h3>
+              <p>Available Rooms</p>
+            </div>
+            <div class="stat-icon green">🏠</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-details">
+              <h3 id="unassignedStudents">0</h3>
+              <p>Unassigned Students</p>
+            </div>
+            <div class="stat-icon blue">👥</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+    const adminId = localStorage.getItem('adminId');
+    const token = localStorage.getItem('token');
+
+    if (!adminId || !token) {
+      window.location.href = '../login.html';
+    }
+
+    // Set today's date as default
+    document.getElementById('allotmentDate').valueAsDate = new Date();
+
+    async function loadStudents() {
+      try {
+        const response = await fetch(`${API_URL}/admin/students`);
+        const data = await response.json();
+
+        const select = document.getElementById('student');
+
+        if (data.success && data.data.length > 0) {
+          select.innerHTML = '<option value="">Select a student</option>' +
+            data.data.map(student =>
+              `<option value="${student.id}">${student.full_name} (${student.email})</option>`
+            ).join('');
+
+          // Count unassigned students
+          const unassigned = data.data.filter(s => !s.room_id).length;
+          document.getElementById('unassignedStudents').textContent = unassigned;
+        } else {
+          select.innerHTML = '<option value="">No students available</option>';
+        }
+      } catch (error) {
+        console.error('Error loading students:', error);
+      }
+    }
+
+    async function loadRooms() {
+      try {
+        const response = await fetch(`${API_URL}/admin/rooms`);
+        const data = await response.json();
+
+        const select = document.getElementById('room');
+
+        if (data.success && data.data.length > 0) {
+          const availableRooms = data.data.filter(room => 
+            room.status === 'Active' && room.occupied < room.capacity
+          );
+
+          select.innerHTML = '<option value="">Select a room</option>' +
+            availableRooms.map(room =>
+              `<option value="${room.id}">Room ${room.room_number} - ${room.room_type} (₹${room.rent}/month) - ${room.capacity - room.occupied} spaces left</option>`
+            ).join('');
+
+          document.getElementById('availableRooms').textContent = availableRooms.length;
+        } else {
+          select.innerHTML = '<option value="">No rooms available</option>';
+        }
+      } catch (error) {
+        console.error('Error loading rooms:', error);
+      }
+    }
+
+    document.getElementById('assignRoomForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const assignmentData = {
+        student_id: parseInt(document.getElementById('student').value),
+        room_id: parseInt(document.getElementById('room').value),
+        allotment_date: document.getElementById('allotmentDate').value,
+        deposit_paid: parseFloat(document.getElementById('deposit').value)
+      };
+
+      try {
+        const response = await fetch(`${API_URL}/admin/assign-room`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(assignmentData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert('Room assigned successfully!', 'success');
+          document.getElementById('assignRoomForm').reset();
+          document.getElementById('allotmentDate').valueAsDate = new Date();
+          loadStudents();
+          loadRooms();
+        } else {
+          showAlert(data.message || 'Failed to assign room', 'error');
+        }
+      } catch (error) {
+        showAlert('Error assigning room', 'error');
+      }
+    });
+
+    function showAlert(message, type) {
+      const alert = document.getElementById('alert');
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      setTimeout(() => alert.classList.remove('show'), 3000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '../login.html';
+    }
+
+    loadStudents();
+    loadRooms();
+  </script>
+</body>
+</html>

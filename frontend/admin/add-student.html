@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Student - Hostel Management</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>🏠 Admin Panel</h2>
+      <p id="adminName">Administrator</p>
+    </div>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html">📊 Dashboard</a></li>
+      <li><a href="profile.html">👤 Profile</a></li>
+      <li><a href="add-student.html" class="active">➕ Add Student</a></li>
+      <li><a href="create-rooms.html">🏠 Create Rooms</a></li>
+      <li><a href="assign-room.html">🔗 Assign Room</a></li>
+      <li><a href="payments.html">💰 Payments</a></li>
+      <li><a href="complaints.html">📝 Complaints</a></li>
+    </ul>
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Add New Student</h1>
+      <p>Register a new student to the hostel</p>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Student Information</h2>
+      </div>
+      <div class="card-body">
+        <form id="addStudentForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="name">Full Name *</label>
+              <input type="text" id="name" required placeholder="Enter student name">
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email Address *</label>
+              <input type="email" id="email" required placeholder="student@example.com">
+            </div>
+
+            <div class="form-group">
+              <label for="phone">Phone Number *</label>
+              <input type="tel" id="phone" required placeholder="1234567890">
+            </div>
+
+            <div class="form-group">
+              <label for="course">Course *</label>
+              <input type="text" id="course" required placeholder="e.g., Computer Science">
+            </div>
+
+            <div class="form-group">
+              <label for="year">Year *</label>
+              <select id="year" required>
+                <option value="">Select Year</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="guardianName">Guardian Name *</label>
+              <input type="text" id="guardianName" required placeholder="Parent/Guardian name">
+            </div>
+
+            <div class="form-group">
+              <label for="guardianPhone">Guardian Phone *</label>
+              <input type="tel" id="guardianPhone" required placeholder="Guardian contact">
+            </div>
+
+            <div class="form-group">
+              <label for="address">Address *</label>
+              <textarea id="address" required placeholder="Enter complete address" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              ➕ Add Student
+            </button>
+            <button type="reset" class="btn btn-secondary">
+              🔄 Reset Form
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>All Students</h2>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Course</th>
+                <th>Year</th>
+              </tr>
+            </thead>
+            <tbody id="studentsTable">
+              <tr>
+                <td colspan="6" style="text-align: center;">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+    const adminId = localStorage.getItem('adminId');
+    const token = localStorage.getItem('token');
+
+    if (!adminId || !token) {
+      window.location.href = '../login.html';
+    }
+
+    document.getElementById('addStudentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const fullName = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      
+      // Generate username from email (part before @)
+      const username = email.split('@')[0];
+
+      const studentData = {
+        username: username,
+        full_name: fullName,
+        email: email,
+        phone: document.getElementById('phone').value,
+        course: document.getElementById('course').value,
+        year: document.getElementById('year').value,
+        guardian_name: document.getElementById('guardianName').value,
+        guardian_phone: document.getElementById('guardianPhone').value,
+        address: document.getElementById('address').value
+      };
+
+      try {
+        const response = await fetch(`${API_URL}/admin/students/add`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(studentData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showAlert('Student added successfully! Default password: student123', 'success');
+          document.getElementById('addStudentForm').reset();
+          loadStudents();
+        } else {
+          showAlert(data.message || 'Failed to add student', 'error');
+        }
+      } catch (error) {
+        showAlert('Error adding student', 'error');
+      }
+    });
+
+    async function loadStudents() {
+      try {
+        const response = await fetch(`${API_URL}/admin/students`);
+        const data = await response.json();
+
+        const tbody = document.getElementById('studentsTable');
+
+        if (data.success && data.data.length > 0) {
+          tbody.innerHTML = data.data.map(student => `
+            <tr>
+              <td>${student.id}</td>
+              <td>${student.full_name}</td>
+              <td>${student.email}</td>
+              <td>${student.phone}</td>
+              <td>${student.course}</td>
+              <td>${student.year}</td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No students found</td></tr>';
+        }
+      } catch (error) {
+        console.error('Error loading students:', error);
+      }
+    }
+
+    function showAlert(message, type) {
+      const alert = document.getElementById('alert');
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      setTimeout(() => alert.classList.remove('show'), 3000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '../login.html';
+    }
+
+    loadStudents();
+  </script>
+</body>
+</html>
